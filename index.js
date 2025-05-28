@@ -11,7 +11,15 @@ const authRoutes = require('./routes/authRoutes'); // path => routes/auth.js
 const app = express();
 
 /* ------------ middleware ------------ */
-app.use(cors({ origin: process.env.FRONTEND_URL })); // adjust if needed
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",    // CRA dev server
+      "http://localhost:5173"     // (keep Vite if you still use it elsewhere)
+    ],
+    credentials: true            // if you ever send cookies
+  })
+);
 app.use(express.json());       // parses application/json
 app.use(morgan('dev'));        // tiny request logger
 

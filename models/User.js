@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type   : String,
-      enum   : ['student', 'admin'],
+      enum   : ['student', 'teacher', 'admin'],
       default: 'student',
     },
     // fields just for password-reset
@@ -32,9 +32,5 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-/* ----- helpers ----- */
-userSchema.methods.comparePassword = function (candidate) {
-  return bcrypt.compare(candidate, this.password);
-};
 
 module.exports = mongoose.model('User', userSchema);
