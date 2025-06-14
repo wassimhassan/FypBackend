@@ -4,6 +4,9 @@ const jwt          = require('jsonwebtoken');
 const nodemailer   = require('nodemailer');
 const asyncHandler = require('express-async-handler');
 const User         = require('../models/User');
+const multer = require("multer");
+const multerS3 = require('multer-s3');
+const s3 = require('../utils/s3');
 
 require('dotenv').config();
 const router = express.Router();
@@ -163,5 +166,159 @@ router.post("/confirm-reset", async (req, res) => {
         res.status(400).json({ message: "Invalid or expired token" });
     }
 });
+
+// Get User Profile Route
+router.get(
+    "/profile",
+    protect,
+    asyncHandler(async (req, res) => {
+        const user = await User.findById(req.user.id).select("-password");
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
+        }
+        res.status(200).json(user);
+    })
+);
+
+// Update User Profile Route
+router.put(
+    "/profile",
+    protect,
+    asyncHandler(async (req, res) => {
+        const { username, email, phoneNumber } = req.body;
+
+        // Find user by ID
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
+        }
+
+        // Update fields if provided
+        if (username) user.username = username;
+        if (phoneNumber) user.phoneNumber = phoneNumber;
+        if (email) user.email = email;
+
+
+        await user.save();
+
+        res.status(200).json({ message: "Profile updated successfully", user });
+    })
+);
+
+// Check if user is authenticated
+router.get(
+    "/auth-check",
+    protect,
+    asyncHandler(async (req, res) => {
+        const user = await User.findById(req.user.id).select("-password");
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
+        }
+        res.status(200).json({ message: "Authenticated", user });
+    })
+);
+
+// Logout Route
+router.post(
+    "/logout",
+    asyncHandler(async (req, res) => {
+        res.status(200).json({ message: "Logged out successfully. Remove token from frontend storage." });
+    })
+);
+
+const upload = multer({
+    storage: multerS3({
+        s3: s3,
+        bucket: process.env.AWS_BUCKET_NAME,
+        metadata: function (req, file, cb) {
+            cb(null, { fieldName: file.fieldname });
+        },
+        key: function (req, file, cb) {
+            cb(null, Date.now().toString() + '-' + file.originalname);
+        }
+    })
+});
+
+
+
+// Upload Profile Picture
+router.post("/upload-profile-picture", protect, upload.single("profilePicture"), async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Store S3 URL
+        user.profilePicture = req.file.location;
+        await user.save();
+
+        res.status(200).json({ message: "Profile picture uploaded", profilePicture: user.profilePicture });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+});
+
+// Update Profile Picture
+router.put("/update-profile-picture", protect, upload.single("profilePicture"), async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        user.profilePicture = req.file.location;
+        await user.save();
+
+        res.status(200).json({ message: "Profile picture updated", profilePicture: user.profilePicture });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+});
+
+// Remove Profile Picture (Reset to Default `cam.jpg`)
+router.delete("/remove-profile-picture", protect, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Reset to default profile picture (cam.jpg)
+        user.profilePicture = "https://fekra.s3.eu-north-1.amazonaws.com/default.jpg"; // ✅ Correct S3 default image
+        await user.save();
+
+        res.status(200).json({ message: "Profile picture removed", profilePicture: user.profilePicture });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+});
+
+// Get User Profile Picture
+router.get("/profile-picture", protect, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.status(200).json({ profilePicture: user.profilePicture });
+    } catch (error) {
+        console.error("Error fetching profile picture:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+});
+
+router.get("/me", protect, asyncHandler(async (req, res) => {
+    try {
+      const user = await User.findById(req.user.id).select("-password");
+      if (!user) return res.status(404).json({ error: "User not found" });
+  
+      res.status(200).json(user);
+    } catch (err) {
+      console.error("Error fetching user info:", err.message);
+      res.status(500).json({ error: "Server error while fetching user info" });
+    }
+  }));
 
 module.exports = router;

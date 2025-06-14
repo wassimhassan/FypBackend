@@ -20,6 +20,15 @@ const userSchema = new mongoose.Schema(
       required: true,
       minlength: 8,        // at least 8 chars incl. letters & numbers
     },
+    profilePicture: {
+    type: String,
+    default: ""
+  },
+    phoneNumber: {
+    type: String,
+    unique: false,
+    default: ""
+  },
     role: {
       type   : String,
       enum   : ['student', 'teacher', 'admin'],
