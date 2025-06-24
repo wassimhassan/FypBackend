@@ -6,7 +6,10 @@ const asyncHandler = require('express-async-handler');
 const User         = require('../models/User');
 const multer = require("multer");
 const multerS3 = require('multer-s3');
+const { DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const s3 = require('../utils/s3');
+const DefaultAvatar =
+  "https://fekra.s3.eu-north-1.amazonaws.com/default.png";
 
 require('dotenv').config();
 const router = express.Router();
@@ -278,21 +281,39 @@ router.put("/update-profile-picture", protect, upload.single("profilePicture"), 
 
 // Remove Profile Picture (Reset to Default `cam.jpg`)
 router.delete("/remove-profile-picture", protect, async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id);
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-        // Reset to default profile picture (cam.jpg)
-        user.profilePicture = "https://fekra.s3.eu-north-1.amazonaws.com/default.jpg"; // ✅ Correct S3 default image
-        await user.save();
+    /* -------- 1. Delete the old object if it isn’t the default ---------- */
+    if (user.profilePicture && user.profilePicture !== DefaultAvatar) {
+      // turn "https://fekra.s3.eu-north-1.amazonaws.com/uploads/avatars/abc.jpg"
+      // into "uploads/avatars/abc.jpg"
+      const key = decodeURIComponent(
+            new URL(user.profilePicture).pathname.slice(1)
+             );
 
-        res.status(200).json({ message: "Profile picture removed", profilePicture: user.profilePicture });
-    } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message });
+      await s3.send(
+        new DeleteObjectCommand({
+          Bucket: process.env.AWS_BUCKET_NAME, // e.g. "fekra"
+          Key: key,
+        })
+      ); // ⬅ returns 204 even if the key is wrong, so no error here :contentReference[oaicite:0]{index=0}
     }
+
+    /* -------- 2. Point the user back to the default picture ------------- */
+    user.profilePicture = DefaultAvatar;
+    await user.save();
+
+    res
+      .status(200)
+      .json({ message: "Profile picture removed", profilePicture: user.profilePicture });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
 });
+
 
 // Get User Profile Picture
 router.get("/profile-picture", protect, async (req, res) => {

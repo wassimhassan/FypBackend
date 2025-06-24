@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema(
     },
     profilePicture: {
     type: String,
-    default: ""
+    default: "https://fekra.s3.eu-north-1.amazonaws.com/default.png"
   },
     phoneNumber: {
     type: String,
