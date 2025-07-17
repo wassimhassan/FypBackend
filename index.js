@@ -7,6 +7,7 @@ const cors      = require('cors');
 const morgan    = require('morgan');
 
 const authRoutes = require('./routes/authRoutes'); // path => routes/auth.js
+const profileRoutes = require('./routes/profileRoutes');
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use(morgan('dev'));        // tiny request logger
 /* ------------- routes --------------- */
 app.get('/', (_req, res) => res.send('Backend is running! 🚀'));
 app.use('/api/auth', authRoutes);
+app.use('/api/profile', profileRoutes);
 
 /* ---------- 404 fallback ------------ */
 app.use((req, res) => {
