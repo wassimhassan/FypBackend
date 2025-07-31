@@ -44,9 +44,17 @@ exports.signup = asyncHandler(async (req, res) => {
 exports.login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email }).select('+password');
+console.log("📥 Login payload received:", req.body);
 
   if (!user || !(await bcrypt.compare(password, user.password)))
     return res.status(400).json({ message: 'Invalid credentials.' });
+
+  console.log("✅ User logged in:", {
+    id: user._id.toString(),
+    role: user.role,
+    email: user.email,
+    username: user.username
+  });
 
   res.json({ token: signToken(user) });
 });

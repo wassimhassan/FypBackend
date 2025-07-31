@@ -8,6 +8,7 @@ const morgan    = require('morgan');
 
 const authRoutes = require('./routes/authRoutes'); // path => routes/auth.js
 const profileRoutes = require('./routes/profileRoutes');
+const reviewRoutes = require("./routes/reviewRoutes");
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use(morgan('dev'));        // tiny request logger
 app.get('/', (_req, res) => res.send('Backend is running! 🚀'));
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 /* ---------- 404 fallback ------------ */
 app.use((req, res) => {
