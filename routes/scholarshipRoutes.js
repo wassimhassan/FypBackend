@@ -1,4 +1,5 @@
 const express = require('express');
+const protect   = require("../middleware/auth");
 const {
   createScholarship,
   getAllScholarships,
@@ -7,7 +8,7 @@ const {
   deleteScholarship,
 } = require('../controllers/scholarshipController');
 
-const { protect } = require('../middleware/auth');
+
 
 const router = express.Router();
 
