@@ -8,13 +8,9 @@ const morgan    = require('morgan');
 
 const authRoutes = require('./routes/authRoutes'); // path => routes/auth.js
 const profileRoutes = require('./routes/profileRoutes');
-<<<<<<< HEAD
-const reviewRoutes = require("./routes/reviewRoutes");
-=======
 const scholarshipRoutes = require('./routes/scholarshipRoutes');
 const reviewRoutes = require("./routes/reviewRoutes");
 
->>>>>>> c3162bc97fe4a417eb9a02d6f49bea840a1d8473
 
 const app = express();
 
