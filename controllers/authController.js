@@ -34,7 +34,13 @@ exports.signup = asyncHandler(async (req, res) => {
 
   // Set role logic
   const teacherEmails = ['teacher@fekra.com']; // Add more as needed
-  const userRole = teacherEmails.includes(email.toLowerCase()) ? 'teacher' : 'student';
+  const adminEmails   = ['admin@example.com']; // Add more as needed
+  let userRole = 'student';
+  if (teacherEmails.includes(email.toLowerCase())) {
+    userRole = 'teacher';
+  } else if (adminEmails.includes(email.toLowerCase())) {
+    userRole = 'admin';
+  }
 
   const user = await User.create({ username, email, password: hashed, role: userRole });
 
