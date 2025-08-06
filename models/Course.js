@@ -13,7 +13,11 @@ const courseSchema = new mongoose.Schema({
   price: {
     type: String, // string to support both "free" and "$15"
     required: true
-  }
+  },
+  enrolledStudents: [{
+  type: mongoose.Schema.Types.ObjectId,
+  ref: 'User'
+  }]
 }, {
   timestamps: true
 });
