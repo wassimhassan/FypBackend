@@ -2,14 +2,11 @@
 const mongoose = require('mongoose');
 
 const scholarshipSchema = new mongoose.Schema({
-  scholarship_id: {
-    type: String,
-    required: true,
-    unique: true,
-  },
+  
   scholarship_title: {
     type: String,
     required: true,
+    unique:   true,
   },
   scholarship_description: {
     type: String,

@@ -10,7 +10,13 @@ const authRoutes = require('./routes/authRoutes'); // path => routes/auth.js
 const profileRoutes = require('./routes/profileRoutes');
 const scholarshipRoutes = require('./routes/scholarshipRoutes');
 const reviewRoutes = require("./routes/reviewRoutes");
+<<<<<<< HEAD
 const userRoutes = require('./routes/userRoutes'); // path to your file
+=======
+const careerRoutes = require('./routes/careerRoutes');
+const universityRoutes = require('./routes/universityRoutes');
+const courseRoutes = require('./routes/courseRoutes');
+>>>>>>> e3e31f8b8b73d3d20e907b9afc752f80845781d6
 
 
 const app = express();
@@ -37,6 +43,9 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/scholarships', scholarshipRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/careers', careerRoutes);
+app.use('/api/universities', universityRoutes);
+app.use('/api/courses', courseRoutes);
 
 /* ---------- 404 fallback ------------ */
 app.use((req, res) => {
