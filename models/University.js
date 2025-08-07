@@ -25,6 +25,9 @@ const universitySchema = new mongoose.Schema({
   tuition: {
     type: Number,
     required: true // annual tuition in USD
+  },
+  website: {
+    type: String,
   }
 }, {
   timestamps: true
