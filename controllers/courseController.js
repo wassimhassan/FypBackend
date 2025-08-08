@@ -73,11 +73,23 @@ const enrollInCourse = async (req, res) => {
   }
 };
 
+// Get courses the logged-in user is enrolled in
+const getMyCourses = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const courses = await Course.find({ enrolledStudents: userId })
+      .sort({ createdAt: -1 });
+    res.json(courses);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 module.exports = {
   createCourse,
   getAllCourses,
   updateCourse,
   deleteCourse,
-  enrollInCourse
+  enrollInCourse,
+  getMyCourses
 };
