@@ -73,11 +73,29 @@ const enrollInCourse = async (req, res) => {
   }
 };
 
+const getEnrolledStudents = async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id).populate("enrolledStudents", "-password -resetToken -resetTokenExpires");
+
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    res.json({
+      totalEnrolled: course.enrolledStudents.length,
+      students: course.enrolledStudents,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 module.exports = {
   createCourse,
   getAllCourses,
   updateCourse,
   deleteCourse,
-  enrollInCourse
+  enrollInCourse,
+  getEnrolledStudents, // ✅ add this
+
 };
