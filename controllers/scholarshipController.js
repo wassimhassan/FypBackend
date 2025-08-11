@@ -71,5 +71,30 @@ const deleteScholarship = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+// Get applicants for a scholarship (Admin only)
+const getScholarshipApplicants = async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Unauthorized' })
+    }
 
-module.exports = { createScholarship, getAllScholarships, applyToScholarship, updateScholarship, deleteScholarship };
+    const scholarship = await Scholarship.findById(req.params.id)
+      .populate({
+        path: 'applicants',
+        select: '_id username profilePicture email', // add/remove fields as you like
+      })
+      .lean()
+
+    if (!scholarship) {
+      return res.status(404).json({ message: 'Scholarship not found' })
+    }
+
+    // Return just the list for a simple frontend contract
+    res.json({ applicants: scholarship.applicants || [] })
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+}
+
+module.exports = { createScholarship, getAllScholarships, applyToScholarship, updateScholarship, deleteScholarship,  getScholarshipApplicants, // 👈 add this
+ };
