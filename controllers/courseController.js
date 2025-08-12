@@ -85,6 +85,17 @@ const getEnrolledStudents = async (req, res) => {
       totalEnrolled: course.enrolledStudents.length,
       students: course.enrolledStudents,
     });
+      } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+// Get courses the logged-in user is enrolled in
+const getMyCourses = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const courses = await Course.find({ enrolledStudents: userId })
+      .sort({ createdAt: -1 });
+    res.json(courses);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -96,6 +107,6 @@ module.exports = {
   updateCourse,
   deleteCourse,
   enrollInCourse,
-  getEnrolledStudents, // ✅ add this
-
+  getEnrolledStudents,
+  getMyCourses
 };
