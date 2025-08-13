@@ -19,7 +19,7 @@ router.get('/', getAllCourses);
 router.put('/:id', protect, updateCourse);
 router.delete('/:id', protect, deleteCourse);
 router.post('/:id/enroll', protect, enrollInCourse);
-router.post('/my', protect, getMyCourses);
+router.get('/my', protect, getMyCourses);
 router.get('/:id/enrolled', protect, getEnrolledStudents); // ✅ New route
 
 module.exports = router;
