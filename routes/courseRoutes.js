@@ -5,8 +5,9 @@ const {
   updateCourse,
   deleteCourse,
   enrollInCourse,
-  getEnrolledStudents, // ✅ add this
-
+  getMyCourses,
+  getEnrolledStudents
+  
 } = require('../controllers/courseController');
 
 const protect = require("../middleware/auth");
@@ -18,6 +19,7 @@ router.get('/', getAllCourses);
 router.put('/:id', protect, updateCourse);
 router.delete('/:id', protect, deleteCourse);
 router.post('/:id/enroll', protect, enrollInCourse);
+router.post('/my', protect, getMyCourses);
 router.get('/:id/enrolled', protect, getEnrolledStudents); // ✅ New route
 
 module.exports = router;
