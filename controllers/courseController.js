@@ -5,7 +5,10 @@ const createCourse = async (req, res) => {
   try {
     if (req.user.role !== 'teacher' && req.user.role !== 'admin') return res.status(403).json({ message: 'Unauthorized' });
 
-    const newCourse = await Course.create(req.body);
+    const newCourse = await Course.create({
+      ...req.body,
+      createdBy: req.user.id,             // <-- ownership
+    });
     res.status(201).json(newCourse);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -101,6 +104,20 @@ const getMyCourses = async (req, res) => {
   }
 };
 
+// NEW: courses created by the logged-in teacher/admin
+const getMyCreatedCourses = async (req, res) => {
+  try {
+    if (req.user.role !== 'teacher' && req.user.role !== 'admin')
+      return res.status(403).json({ message: 'Unauthorized' });
+
+    const courses = await Course.find({ createdBy: req.user.id })
+      .sort({ createdAt: -1 });
+    res.json(courses);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   createCourse,
   getAllCourses,
@@ -108,5 +125,6 @@ module.exports = {
   deleteCourse,
   enrollInCourse,
   getEnrolledStudents,
-  getMyCourses
+  getMyCourses,
+  getMyCreatedCourses,
 };

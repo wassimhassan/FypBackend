@@ -6,7 +6,8 @@ const {
   deleteCourse,
   enrollInCourse,
   getMyCourses,
-  getEnrolledStudents
+  getEnrolledStudents,
+  getMyCreatedCourses,
   
 } = require('../controllers/courseController');
 
@@ -20,6 +21,7 @@ router.put('/:id', protect, updateCourse);
 router.delete('/:id', protect, deleteCourse);
 router.post('/:id/enroll', protect, enrollInCourse);
 router.get('/my', protect, getMyCourses);
-router.get('/:id/enrolled', protect, getEnrolledStudents); // ✅ New route
+router.get('/:id/enrolled', protect, getEnrolledStudents); 
+router.get('/mine-created', protect, getMyCreatedCourses); 
 
 module.exports = router;
