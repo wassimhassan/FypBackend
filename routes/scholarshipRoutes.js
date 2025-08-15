@@ -1,5 +1,5 @@
 const express = require('express');
-const protect = require("../middleware/auth");
+const { protect, requireRole } = require('../middleware/auth');
 const {
   createScholarship,
   getAllScholarships,

@@ -14,6 +14,7 @@ const userRoutes = require('./routes/userRoutes'); // path to your file
 const careerRoutes = require('./routes/careerRoutes');
 const universityRoutes = require('./routes/universityRoutes');
 const courseRoutes = require('./routes/courseRoutes');
+const courseContentRoutes = require('./routes/courseContentRoutes');
 
 
 const app = express();
@@ -43,6 +44,8 @@ app.use('/api/users', userRoutes);
 app.use('/api/careers', careerRoutes);
 app.use('/api/universities', universityRoutes);
 app.use('/api/courses', courseRoutes);
+app.use('/api/courses', courseContentRoutes);
+
 
 /* ---------- 404 fallback ------------ */
 app.use((req, res) => {

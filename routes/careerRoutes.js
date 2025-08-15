@@ -6,7 +6,7 @@ const {
   deleteCareer
 } = require('../controllers/careerController');
 
-const protect = require("../middleware/auth");
+const { protect, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 

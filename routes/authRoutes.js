@@ -11,7 +11,7 @@ const {
   logout
 } = require('../controllers/authController');
 
-const protect = require('../middleware/auth');
+const { protect, requireRole } = require('../middleware/auth');
 
 router.post('/signup', signup);
 router.post('/login', login);

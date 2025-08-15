@@ -11,4 +11,13 @@ const protect = (req, res, next) => {
   }
 };
 
-module.exports = protect;
+const requireRole = (...roles) => (req, res, next) => {
+  // req.user is set by protect
+  const role = req.user?.role;
+  if (!role || !roles.includes(role)) {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+  next();
+};
+
+module.exports = { protect, requireRole };

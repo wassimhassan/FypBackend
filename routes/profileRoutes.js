@@ -2,7 +2,7 @@ const express   = require("express");
 const multer    = require("multer");
 const multerS3  = require("multer-s3");
 const s3        = require("../utils/s3");
-const protect   = require("../middleware/auth"); // adjust path if different
+const { protect, requireRole } = require('../middleware/auth');
 
 require("dotenv").config();
 

@@ -11,7 +11,7 @@ const {
   
 } = require('../controllers/courseController');
 
-const protect = require("../middleware/auth");
+const { protect, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
