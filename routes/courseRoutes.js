@@ -8,7 +8,9 @@ const {
   getMyCourses,
   getEnrolledStudents,
   getMyCreatedCourses,
-  
+  getCourseRating,
+  rateCourse,
+  deleteMyCourseRating,
 } = require('../controllers/courseController');
 
 const { protect, requireRole } = require('../middleware/auth');
@@ -23,5 +25,10 @@ router.post('/:id/enroll', protect, enrollInCourse);
 router.get('/my', protect, getMyCourses);
 router.get('/:id/enrolled', protect, getEnrolledStudents); 
 router.get('/mine-created', protect, getMyCreatedCourses); 
+router.get('/:id/rating', protect, getCourseRating);
+// if you prefer middleware: requireRole('student'), keep it; otherwise rely on controller checks
+router.post('/:id/rating', protect /*, requireRole('student')*/, rateCourse);
+router.delete('/:id/rating', protect, deleteMyCourseRating);
+
 
 module.exports = router;

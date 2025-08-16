@@ -118,6 +118,124 @@ const getMyCreatedCourses = async (req, res) => {
   }
 };
 
+// GET /api/courses/:id/rating
+// returns { ratingAvg, ratingCount, myRating }
+const getCourseRating = async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id).select('ratingAvg ratingCount CourseReviews');
+    if (!course) return res.status(404).json({ message: 'Course not found' });
+
+    const my = course.CourseReviews.find(r => String(r.user) === String(req.user.id));
+    res.json({
+      ratingAvg: course.ratingAvg || 0,
+      ratingCount: course.ratingCount || 0,
+      myRating: my ? my.rating : 0,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// POST /api/courses/:id/rating  (students + must be enrolled)
+const rateCourse = async (req, res) => {
+  try {
+    if (req.user.role !== 'student') {
+      return res.status(403).json({ message: 'Only students can rate courses' });
+    }
+    const { rating } = req.body;
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ message: 'Rating must be an integer 1–5' });
+    }
+
+    const course = await Course.findById(req.params.id);
+    if (!course) return res.status(404).json({ message: 'Course not found' });
+
+    const isEnrolled = course.enrolledStudents.some(s => String(s) === String(req.user.id));
+    if (!isEnrolled) {
+      return res.status(403).json({ message: 'You must be enrolled to rate this course' });
+    }
+
+    const existing = course.CourseReviews.find(r => String(r.user) === String(req.user.id));
+    if (existing) {
+      existing.rating = rating;
+      existing.updatedAt = new Date();
+    } else {
+      course.CourseReviews.push({
+        user: req.user.id,
+        rating,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    }
+
+    // update summary
+    if (typeof course.recomputeRatingStats === 'function') {
+      course.recomputeRatingStats();
+    } else {
+      // fallback if method missing
+      const n = course.CourseReviews.length;
+      const sum = course.CourseReviews.reduce((s, r) => s + (r.rating || 0), 0);
+      course.ratingCount = n;
+      course.ratingAvg = n ? Math.round((sum / n) * 10) / 10 : 0;
+    }
+
+    await course.save();
+
+    return res.json({
+      message: 'Rating saved',
+      ratingAvg: course.ratingAvg,
+      ratingCount: course.ratingCount,
+      myRating: rating,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// DELETE /api/courses/:id/rating  (students + must be enrolled)
+const deleteMyCourseRating = async (req, res) => {
+  try {
+    if (req.user.role !== 'student') {
+      return res.status(403).json({ message: 'Only students can remove ratings' });
+    }
+
+    const course = await Course.findById(req.params.id);
+    if (!course) return res.status(404).json({ message: 'Course not found' });
+
+    // keep the server-side enrollment guard (defense in depth)
+    const isEnrolled = course.enrolledStudents.some(s => String(s) === String(req.user.id));
+    if (!isEnrolled) {
+      return res.status(403).json({ message: 'You must be enrolled to modify ratings' });
+    }
+
+    const idx = course.CourseReviews.findIndex(r => String(r.user) === String(req.user.id));
+    if (idx === -1) return res.status(404).json({ message: 'No rating to delete' });
+
+    course.CourseReviews.splice(idx, 1);
+
+    // recompute summary
+    if (typeof course.recomputeRatingStats === 'function') {
+      course.recomputeRatingStats();
+    } else {
+      const n = course.CourseReviews.length;
+      const sum = course.CourseReviews.reduce((s, r) => s + (r.rating || 0), 0);
+      course.ratingCount = n;
+      course.ratingAvg = n ? Math.round((sum / n) * 10) / 10 : 0;
+    }
+
+    await course.save();
+
+    return res.json({
+      message: 'Rating removed',
+      ratingAvg: course.ratingAvg,
+      ratingCount: course.ratingCount,
+      myRating: 0,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   createCourse,
   getAllCourses,
@@ -127,4 +245,7 @@ module.exports = {
   getEnrolledStudents,
   getMyCourses,
   getMyCreatedCourses,
+  getCourseRating,
+  rateCourse,
+  deleteMyCourseRating,
 };
