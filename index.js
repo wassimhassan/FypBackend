@@ -15,6 +15,7 @@ const careerRoutes = require('./routes/careerRoutes');
 const universityRoutes = require('./routes/universityRoutes');
 const courseRoutes = require('./routes/courseRoutes');
 const courseContentRoutes = require('./routes/courseContentRoutes');
+const chatbotRoutes = require("./routes/chatbotRoutes"); // 🆕
 
 
 const app = express();
@@ -45,6 +46,7 @@ app.use('/api/careers', careerRoutes);
 app.use('/api/universities', universityRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/courses', courseContentRoutes);
+app.use("/api/chatbot", chatbotRoutes); // 🆕
 
 
 /* ---------- 404 fallback ------------ */
