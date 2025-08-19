@@ -53,7 +53,7 @@ const deleteCourse = async (req, res) => {
   }
 };
 
-// Enroll in a course (students only)
+// Request enrollment in a course (students only)
 const enrollInCourse = async (req, res) => {
   try {
     if (req.user.role !== 'student') {
@@ -63,14 +63,21 @@ const enrollInCourse = async (req, res) => {
     const course = await Course.findById(req.params.id);
     if (!course) return res.status(404).json({ message: 'Course not found' });
 
+    // Check if already enrolled
     if (course.enrolledStudents.includes(req.user.id)) {
       return res.status(400).json({ message: 'Already enrolled in this course' });
     }
 
-    course.enrolledStudents.push(req.user.id);
+    // Check if already requested
+    if (course.pendingStudents.includes(req.user.id)) {
+      return res.status(400).json({ message: 'Enrollment request already pending approval' });
+    }
+
+    // Add to pending students for teacher approval
+    course.pendingStudents.push(req.user.id);
     await course.save();
 
-    res.json({ message: 'Enrollment successful' });
+    res.json({ message: 'Enrollment request submitted successfully. Waiting for teacher approval.' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -236,6 +243,162 @@ const deleteMyCourseRating = async (req, res) => {
   }
 };
 
+// Get pending enrollment requests for a course (teachers only)
+const getPendingEnrollments = async (req, res) => {
+  try {
+    if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Only teachers can view pending enrollments' });
+    }
+
+    const course = await Course.findById(req.params.id)
+      .populate('pendingStudents', '-password -resetToken -resetTokenExpires');
+
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    // Check if the user is the course creator
+    if (String(course.createdBy) !== String(req.user.id) && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'You can only view pending enrollments for your own courses' });
+    }
+
+    res.json({
+      totalPending: course.pendingStudents.length,
+      students: course.pendingStudents,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Approve enrollment request (teachers only)
+const approveEnrollment = async (req, res) => {
+  try {
+    if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Only teachers can approve enrollments' });
+    }
+
+    const { studentId } = req.body;
+    if (!studentId) {
+      return res.status(400).json({ message: 'Student ID is required' });
+    }
+
+    const course = await Course.findById(req.params.id);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    // Check if the user is the course creator
+    if (String(course.createdBy) !== String(req.user.id) && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'You can only approve enrollments for your own courses' });
+    }
+
+    // Check if student is in pending list
+    if (!course.pendingStudents.includes(studentId)) {
+      return res.status(400).json({ message: 'Student is not in pending enrollments' });
+    }
+
+    // Check if already enrolled
+    if (course.enrolledStudents.includes(studentId)) {
+      return res.status(400).json({ message: 'Student is already enrolled' });
+    }
+
+    // Move from pending to enrolled
+    course.pendingStudents = course.pendingStudents.filter(id => String(id) !== String(studentId));
+    course.enrolledStudents.push(studentId);
+    await course.save();
+
+    res.json({ message: 'Enrollment approved successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Reject enrollment request (teachers only)
+const rejectEnrollment = async (req, res) => {
+  try {
+    if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Only teachers can reject enrollments' });
+    }
+
+    const { studentId } = req.body;
+    if (!studentId) {
+      return res.status(400).json({ message: 'Student ID is required' });
+    }
+
+    const course = await Course.findById(req.params.id);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    // Check if the user is the course creator
+    if (String(course.createdBy) !== String(req.user.id) && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'You can only reject enrollments for your own courses' });
+    }
+
+    // Check if student is in pending list
+    if (!course.pendingStudents.includes(studentId)) {
+      return res.status(400).json({ message: 'Student is not in pending enrollments' });
+    }
+
+    // Remove from pending
+    course.pendingStudents = course.pendingStudents.filter(id => String(id) !== String(studentId));
+    await course.save();
+
+    res.json({ message: 'Enrollment rejected successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get courses where user has pending enrollment requests
+const getMyPendingEnrollments = async (req, res) => {
+  try {
+    if (req.user.role !== 'student') {
+      return res.status(403).json({ message: 'Only students can view their pending enrollments' });
+    }
+
+    const courses = await Course.find({ pendingStudents: req.user.id })
+      .sort({ createdAt: -1 });
+    
+    res.json(courses);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const getCourseById = async (req, res) => {
+  const course = await Course.findById(req.params.id);
+  if (!course) return res.status(404).json({ message: 'Course not found' });
+  res.json(course);
+};
+
+const cancelMyPending = async (req, res) => {
+  try {
+    if (req.user.role !== 'student') {
+      return res.status(403).json({ message: 'Only students can cancel pending requests' });
+    }
+
+    const result = await Course.updateOne(
+      { _id: req.params.id },
+      { $pull: { pendingStudents: req.user.id } }
+    );
+
+    // result.modifiedCount === 0 means there was nothing to remove (already approved/rejected or never requested)
+    return res.json({
+      ok: true,
+      removed: result.modifiedCount > 0,
+      message:
+        result.modifiedCount > 0
+          ? 'Pending request cancelled.'
+          : 'No pending request to cancel.',
+    });
+  } catch (err) {
+    console.error('[cancelMyPending]', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 module.exports = {
   createCourse,
   getAllCourses,
@@ -248,4 +411,10 @@ module.exports = {
   getCourseRating,
   rateCourse,
   deleteMyCourseRating,
+  getCourseById,
+  getPendingEnrollments,
+  cancelMyPending,
+  approveEnrollment,
+  rejectEnrollment,
+  getMyPendingEnrollments,
 };

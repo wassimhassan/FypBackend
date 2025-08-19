@@ -11,9 +11,17 @@ const {
   getCourseRating,
   rateCourse,
   deleteMyCourseRating,
+  getCourseById,
+  getPendingEnrollments,
+  cancelMyPending,
+  approveEnrollment,
+  rejectEnrollment,
+  getMyPendingEnrollments,
 } = require('../controllers/courseController');
 
 const { protect, requireRole } = require('../middleware/auth');
+const isOwner = require('../middleware/courseOwner');
+
 
 const router = express.Router();
 
@@ -30,5 +38,12 @@ router.get('/:id/rating', protect, getCourseRating);
 router.post('/:id/rating', protect /*, requireRole('student')*/, rateCourse);
 router.delete('/:id/rating', protect, deleteMyCourseRating);
 
+// Enrollment management routes
+router.get('/my/pending', protect, getMyPendingEnrollments);
+router.delete('/:id/pending', protect, cancelMyPending);
+router.get('/:id', protect, getCourseById);
+router.get('/:id/pending', protect, isOwner, getPendingEnrollments);
+router.post('/:id/approve', protect, isOwner, approveEnrollment);
+router.post('/:id/reject', protect, isOwner, rejectEnrollment);
 
 module.exports = router;
