@@ -22,7 +22,6 @@ const app = express();
 /* ------------ middleware ------------ */
 const allowedOrigins = [
   process.env.FRONTEND_URL,       // 🆕 Vercel URL from your .env  e.g. https://fyp-frontend-o18zi5qpz-wassim-hassans-projects.vercel.app
-  "http://localhost:3000",        // React-scripts dev server
   "http://localhost:5173"         // Vite dev server (keep if you still use it)
 ];
 app.use(
