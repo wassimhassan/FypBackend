@@ -19,6 +19,9 @@ const courseSchema = new mongoose.Schema(
 
     // relationships
     enrolledStudents: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+
+    // NEW: requests awaiting teacher approval
+  pendingStudents: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     
     // course reviews/ratings
     CourseReviews: [{

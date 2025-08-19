@@ -18,7 +18,7 @@ exports.chatWithAI = async (req, res, next) => {
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          "HTTP-Referer": process.env.SITE_URL || "http://localhost:3001",
+          "HTTP-Referer": process.env.SITE_URL || process.env.FRONTEND_URL,
           "X-Title": "Fekra AI Assistant",
         },
         body: JSON.stringify({ model, messages }),
