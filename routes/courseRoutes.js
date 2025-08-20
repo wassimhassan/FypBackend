@@ -7,6 +7,7 @@ const {
   enrollInCourse,
   getMyCourses,
   getEnrolledStudents,
+  removeEnrolledStudent,
   getMyCreatedCourses,
   getCourseRating,
   rateCourse,
@@ -31,7 +32,8 @@ router.put('/:id', protect, updateCourse);
 router.delete('/:id', protect, deleteCourse);
 router.post('/:id/enroll', protect, enrollInCourse);
 router.get('/my', protect, getMyCourses);
-router.get('/:id/enrolled', protect, getEnrolledStudents); 
+router.get('/:id/enrolled', protect, isOwner, getEnrolledStudents); 
+router.delete('/:id/enrolled/:studentId', protect, isOwner, removeEnrolledStudent);
 router.get('/mine-created', protect, getMyCreatedCourses); 
 router.get('/:id/rating', protect, getCourseRating);
 // if you prefer middleware: requireRole('student'), keep it; otherwise rely on controller checks

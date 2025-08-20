@@ -99,6 +99,27 @@ const getEnrolledStudents = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+const removeEnrolledStudent = async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id);
+    if (!course) return res.status(404).json({ message: 'Course not found' });
+
+    const before = course.enrolledStudents.length;
+    course.enrolledStudents = course.enrolledStudents.filter(
+      (sid) => String(sid) !== String(req.params.studentId)
+    );
+
+    if (course.enrolledStudents.length === before) {
+      return res.status(404).json({ message: 'Student not enrolled in this course' });
+    }
+
+    await course.save();
+    res.json({ message: 'Student removed from course' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 // Get courses the logged-in user is enrolled in
 const getMyCourses = async (req, res) => {
   try {
@@ -406,6 +427,7 @@ module.exports = {
   deleteCourse,
   enrollInCourse,
   getEnrolledStudents,
+  removeEnrolledStudent,
   getMyCourses,
   getMyCreatedCourses,
   getCourseRating,
