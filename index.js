@@ -6,16 +6,18 @@ const mongoose  = require('mongoose');
 const cors      = require('cors');
 const morgan    = require('morgan');
 
-const authRoutes = require('./routes/authRoutes'); // path => routes/auth.js
+const authRoutes = require('./routes/authRoutes'); 
 const profileRoutes = require('./routes/profileRoutes');
 const scholarshipRoutes = require('./routes/scholarshipRoutes');
 const reviewRoutes = require("./routes/reviewRoutes");
-const userRoutes = require('./routes/userRoutes'); // path to your file
+const userRoutes = require('./routes/userRoutes'); 
 const careerRoutes = require('./routes/careerRoutes');
 const universityRoutes = require('./routes/universityRoutes');
 const courseRoutes = require('./routes/courseRoutes');
 const courseContentRoutes = require('./routes/courseContentRoutes');
-const chatbotRoutes = require("./routes/chatbotRoutes"); // 🆕
+const chatbotRoutes = require("./routes/chatbotRoutes");
+const eventRoutes = require("./routes/eventRoutes");
+
 
 
 const app = express();
@@ -45,7 +47,8 @@ app.use('/api/careers', careerRoutes);
 app.use('/api/universities', universityRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/courses', courseContentRoutes);
-app.use("/api/chatbot", chatbotRoutes); // 🆕
+app.use("/api/chatbot", chatbotRoutes); 
+app.use("/api/events", eventRoutes);
 
 
 /* ---------- 404 fallback ------------ */

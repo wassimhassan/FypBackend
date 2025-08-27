@@ -17,7 +17,7 @@ exports.uploadCourseContent = async (req, res) => {
         contentType: req.headers['content-type'],
         bodyKeys: Object.keys(req.body || {}),
         files: req.files,
-        file: req.file,
+        file: req.file
       });
       return res.status(400).json({ message: 'No files uploaded' });
     }
