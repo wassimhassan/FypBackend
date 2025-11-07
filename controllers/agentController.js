@@ -36,6 +36,9 @@ You are FEKRA's website assistant.
   • Use get_scholarship_by_title when an exact title is provided.
   • Use list_scholarships_by_type or list_scholarships_by_creator when that’s what they ask.
   • Use get_scholarship_applicants to fetch applicant IDs for a scholarship.
+- For FAQs:
+  • Use search_faqs for keyword/typo queries.
+  • Use get_faq_by_question if the exact question is provided.
 - Dates in answers should use YYYY-MM-DD.
 - Never invent fields/links. Only display what tools return.
 `;
@@ -43,6 +46,31 @@ You are FEKRA's website assistant.
 // ---------- utils ----------
 function escapeRegex(s = "") {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function normalizeQ(s = "") {
+  return s
+    .toLowerCase()
+    .normalize("NFD").replace(/\p{Diacritic}/gu, "") // strip accents
+    .replace(/[^a-z0-9\s]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function levenshtein(a, b) {
+  if (a === b) return 0;
+  const m = a.length, n = b.length;
+  if (!m) return n; if (!n) return m;
+  const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i-1][j] + 1, dp[i][j-1] + 1, dp[i-1][j-1] + cost);
+    }
+  }
+  return dp[m][n];
 }
 
 // ---------- Tool implementations (READ-ONLY) ----------
@@ -405,6 +433,59 @@ async function getScholarshipApplicants(args) {
   return { scholarship_title: doc?.scholarship_title || p.title, applicants: ids };
 }
 
+/* ============================ FAQs tools ============================ */
+
+async function searchFaqs(args) {
+  const p = Schemas.searchFaqs.parse(args);
+  const db = await getDb();
+  const col = db.collection("faqs");
+  const k = Math.max(1, Math.min(p.limit ?? 10, 50));
+  const qn = normalizeQ(p.q || "");
+  if (!qn) {
+    return await col.find({}, { projection: { _id: 0, question: 1, answer: 1, tags: 1 } })
+                    .limit(k).toArray();
+  }
+
+  // 1) try text index (fast)
+  let items = await col.find(
+    { $text: { $search: qn } },
+    { projection: { _id: 0, question: 1, answer: 1, tags: 1, score: { $meta: "textScore" } } }
+  ).sort({ score: { $meta: "textScore" } }).limit(k).toArray();
+
+  // 2) fallback: contains-all-tokens (regex) if text search misses
+  if (!items.length) {
+    const toks = qn.split(" ").filter(Boolean);
+    const andRegex = toks.map(t => new RegExp(escapeRegex(t), "i"));
+    items = await col.find(
+      { $and: andRegex.map(rx => ({ $or: [{ question: rx }, { answer: rx }] })) },
+      { projection: { _id: 0, question: 1, answer: 1, tags: 1 } }
+    ).limit(50).toArray();
+  }
+
+  // 3) fuzzy rank (Levenshtein) to be typo-friendly
+  items.sort((a, b) => {
+    const da = levenshtein(normalizeQ(a.question), qn);
+    const dbb = levenshtein(normalizeQ(b.question), qn);
+    if (da !== dbb) return da - dbb;
+    const da2 = levenshtein(normalizeQ(a.answer), qn);
+    const db2 = levenshtein(normalizeQ(b.answer), qn);
+    return da2 - db2;
+  });
+
+  return items.slice(0, k);
+}
+
+async function getFaqByQuestion(args) {
+  const p = Schemas.getFaqByQuestion.parse(args);
+  const db = await getDb();
+  const rx = new RegExp(`^${escapeRegex(p.question)}$`, "i");
+  const doc = await db.collection("faqs").findOne(
+    { question: rx },
+    { projection: { _id: 0, question: 1, answer: 1, tags: 1 } }
+  );
+  return doc || null;
+}
+
 /* ======================== TOOL EXEC MAP ======================== */
 
 const TOOL_EXEC = {
@@ -425,6 +506,10 @@ const TOOL_EXEC = {
   list_scholarships_by_type: listScholarshipsByType,
   list_scholarships_by_creator: listScholarshipsByCreator,
   get_scholarship_applicants: getScholarshipApplicants,
+
+  // faqs (new)
+  search_faqs: searchFaqs,
+  get_faq_by_question: getFaqByQuestion,
 };
 
 // ---------- Main handler ----------

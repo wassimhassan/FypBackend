@@ -52,23 +52,21 @@ const Schemas = {
 
   listCourseCategories: z.object({}),
 
-
   // --- Scholarships ---
-  // Based on your Scholarship model fields:
-  // title, description, requirements, CreatedBy (string), value (number), type (string), applicants [User ObjectId], timestamps
   searchScholarships: z.object({
-    q:         z.string().min(1).max(200).optional(),     // matches title/description/requirements
+    q:         z.string().min(1).max(200).optional(),
     type:      z.string().min(1).max(80).optional(),
-    createdBy: z.string().min(1).max(120).optional(),     // scholarship_CreatedBy
+    createdBy: z.string().min(1).max(120).optional(),
     minValue:  z.number().min(0).optional(),
     maxValue:  z.number().min(0).optional(),
-    applicant: z.string().min(1).optional(),              // userId to filter by applied/not applied (implementation choice)
-    applied:   z.boolean().optional(),                    // true: only ones this applicant applied to; false: not applied
+    applicant: z.string().min(1).optional(),
+    applied:   z.boolean().optional(),
     sort:      z.enum(['recent','value_desc','value_asc']).optional(),
     limit:     z.number().int().positive().max(50).optional()
-  }).refine(v => v.q || v.type || v.createdBy || v.minValue !== undefined || v.maxValue !== undefined || v.applicant !== undefined, {
-    message: "Provide at least one filter (q, type, createdBy, minValue, maxValue, applicant)."
-  }),
+  }).refine(v =>
+    v.q || v.type || v.createdBy || v.minValue !== undefined || v.maxValue !== undefined || v.applicant !== undefined,
+    { message: "Provide at least one filter (q, type, createdBy, minValue, maxValue, applicant)." }
+  ),
 
   getScholarshipByTitle: z.object({
     title: z.string().min(1).max(200)
@@ -85,7 +83,17 @@ const Schemas = {
   }),
 
   getScholarshipApplicants: z.object({
-    title: z.string().min(1).max(200) // or you could use scholarship id in your implementation
+    title: z.string().min(1).max(200)
+  }),
+
+  // --- FAQs (NEW) ---
+  searchFaqs: z.object({
+    q: z.string().min(1).max(200),
+    limit: z.number().int().positive().max(50).optional()
+  }),
+
+  getFaqByQuestion: z.object({
+    question: z.string().min(1).max(300)
   })
 };
 
@@ -158,9 +166,7 @@ function defineTools() {
         description: "Fetch one course by exact (case-insensitive) title and return its full details.",
         parameters: {
           type: "object",
-          properties: {
-            title: { type: "string" }
-          },
+          properties: { title: { type: "string" } },
           required: ["title"]
         }
       }
@@ -200,10 +206,7 @@ function defineTools() {
       function: {
         name: "list_course_categories",
         description: "List all distinct course categories.",
-        parameters: {
-          type: "object",
-          properties: {}
-        }
+        parameters: { type: "object", properties: {} }
       }
     },
 
@@ -237,9 +240,7 @@ function defineTools() {
         description: "Fetch one scholarship by exact (case-insensitive) title and return its full details.",
         parameters: {
           type: "object",
-          properties: {
-            title: { type: "string" }
-          },
+          properties: { title: { type: "string" } },
           required: ["title"]
         }
       }
@@ -281,10 +282,37 @@ function defineTools() {
         description: "Get the applicants (User IDs) for a scholarship identified by title.",
         parameters: {
           type: "object",
-          properties: {
-            title: { type: "string" }
-          },
+          properties: { title: { type: "string" } },
           required: ["title"]
+        }
+      }
+    },
+
+    // --- FAQs (NEW) ---
+    {
+      type: "function",
+      function: {
+        name: "search_faqs",
+        description: "Search FEKRA FAQs (question+answer) with a keyword; typo-tolerant.",
+        parameters: {
+          type: "object",
+          properties: {
+            q: { type: "string", description: "Free-text user query (may include typos)" },
+            limit: { type: "number" }
+          },
+          required: ["q"]
+        }
+      }
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_faq_by_question",
+        description: "Return one FAQ by exact question text (case-insensitive).",
+        parameters: {
+          type: "object",
+          properties: { question: { type: "string" } },
+          required: ["question"]
         }
       }
     }
